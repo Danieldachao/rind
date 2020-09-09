@@ -25,6 +25,7 @@ type DNSService struct {
 	book       store
 	memo       addrBag
 	forwarders []net.UDPAddr
+	listenAddr string
 }
 
 // Packet carries DNS packet payload and sender address.
@@ -48,10 +49,11 @@ var (
 // Listen starts a DNS server on port 53
 func (s *DNSService) Listen() {
 	var err error
-	s.conn, err = net.ListenUDP("udp", &net.UDPAddr{Port: udpPort})
+	addr, err := net.ResolveUDPAddr("udp", s.listenAddr)
 	if err != nil {
 		log.Fatal(err)
 	}
+	s.conn, err = net.ListenUDP("udp", addr)
 	defer s.conn.Close()
 
 	for {
@@ -96,6 +98,7 @@ func (s *DNSService) Query(p Packet) {
 	val, ok := s.book.get(qString(q))
 
 	if ok {
+		p.message.Response = true
 		p.message.Answers = append(p.message.Answers, val...)
 		go sendPacket(s.conn, p.message, p.addr)
 	} else {
@@ -121,17 +124,18 @@ func sendPacket(conn *net.UDPConn, message dnsmessage.Message, addr net.UDPAddr)
 }
 
 // New setups a DNSService, rwDirPath is read-writable directory path for storing dns records.
-func New(rwDirPath string, forwarders []net.UDPAddr) DNSService {
+func New(rwDirPath, listenAddr string, forwarders []net.UDPAddr) DNSService {
 	return DNSService{
 		book:       store{data: make(map[string]entry), rwDirPath: rwDirPath},
 		memo:       addrBag{data: make(map[string][]net.UDPAddr)},
 		forwarders: forwarders,
+		listenAddr: listenAddr,
 	}
 }
 
 // Start conveniently init every parts of DNS service.
-func Start(rwDirPath string, forwarders []net.UDPAddr) *DNSService {
-	s := New(rwDirPath, forwarders)
+func Start(rwDirPath, listenAddr string, forwarders []net.UDPAddr) *DNSService {
+	s := New(rwDirPath, listenAddr, forwarders)
 	s.book.load()
 	go s.Listen()
 
