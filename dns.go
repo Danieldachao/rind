@@ -54,6 +54,9 @@ func (s *DNSService) Listen() {
 		log.Fatal(err)
 	}
 	s.conn, err = net.ListenUDP("udp", addr)
+	if err != nil {
+		log.Fatal(err)
+	}
 	defer s.conn.Close()
 
 	for {
