@@ -89,27 +89,31 @@ func (s *DNSService) Query(p Packet) {
 				go sendPacket(s.conn, p.message, addr)
 			}
 			s.memo.remove(pKey)
-			go s.saveBulk(qString(p.message.Questions[0]), p.message.Answers)
+			//go s.saveBulk(qString(p.message.Questions[0]), p.message.Answers)
 		}
 		return
 	}
 
 	// was checked before entering this routine
-	q := p.message.Questions[0]
+	//q := p.message.Questions[0]
 
 	// answer the question
-	val, ok := s.book.get(qString(q))
-
-	if ok {
-		p.message.Response = true
-		p.message.Answers = append(p.message.Answers, val...)
-		go sendPacket(s.conn, p.message, p.addr)
-	} else {
-		// forwarding
-		for i := 0; i < len(s.forwarders); i++ {
-			s.memo.set(pString(p), p.addr)
-			go sendPacket(s.conn, p.message, s.forwarders[i])
-		}
+	//  val, ok := s.book.get(qString(q))
+	//
+	//if ok {
+	//	p.message.Response = true
+	//	p.message.Answers = append(p.message.Answers, val...)
+	//	go sendPacket(s.conn, p.message, p.addr)
+	//} else {
+	//	// forwarding
+	//	for i := 0; i < len(s.forwarders); i++ {
+	//		s.memo.set(pString(p), p.addr)
+	//		go sendPacket(s.conn, p.message, s.forwarders[i])
+	//	}
+	//}
+	for i := 0; i < len(s.forwarders); i++ {
+		s.memo.set(pString(p), p.addr)
+		go sendPacket(s.conn, p.message, s.forwarders[i])
 	}
 }
 
